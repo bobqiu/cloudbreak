@@ -1,9 +1,12 @@
 package com.sequenceiq.it.cloudbreak.newway;
 
+import java.io.IOException;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import com.sequenceiq.cloudbreak.api.model.template.ClusterTemplateResponse;
 import com.sequenceiq.it.IntegrationTestContext;
 import com.sequenceiq.it.cloudbreak.newway.log.Log;
-
-import java.io.IOException;
 
 class ClusterTemplateAction {
 
@@ -22,7 +25,8 @@ class ClusterTemplateAction {
                         .clusterTemplateV3EndPoint()
                         .createInWorkspace(workspaceId, clusterTemplateEntity.getRequest()));
 
-        integrationTestContext.putCleanUpParam(clusterTemplateEntity.getName(), clusterTemplateEntity.getResponse().getId());
+        integrationTestContext.putCleanUpParam(clusterTemplateEntity.getName(),
+                ((ClusterTemplateResponse) clusterTemplateEntity.getResponse()).getId());
     }
 
     public static void get(IntegrationTestContext integrationTestContext, Entity entity) throws IOException {
@@ -46,10 +50,23 @@ class ClusterTemplateAction {
                 CloudbreakClient.class);
         Long workspaceId = integrationTestContext.getContextParam(CloudbreakTest.WORKSPACE_ID, Long.class);
         Log.log(" get all cluster templates. ");
-        clusterTemplateEntity.setResponses(
-                client.getCloudbreakClient()
-                        .clusterTemplateV3EndPoint()
-                        .listByWorkspace(workspaceId));
+        Set<ClusterTemplateResponse> clusterTemplateResponses = client.getCloudbreakClient()
+                .clusterTemplateV3EndPoint()
+                .listByWorkspace(workspaceId)
+                .stream()
+                .map(view -> {
+                    ClusterTemplateResponse response = new ClusterTemplateResponse();
+                    response.setStatus(view.getStatus());
+                    response.setDatalakeRequired(view.getDatalakeRequired());
+                    response.setId(view.getId());
+                    response.setCloudPlatform(view.getCloudPlatform());
+                    response.setDescription(view.getDescription());
+                    response.setName(view.getName());
+                    response.setType(view.getType());
+                    return response;
+                })
+                .collect(Collectors.toSet());
+        clusterTemplateEntity.setResponses(clusterTemplateResponses);
     }
 
     public static void delete(IntegrationTestContext integrationTestContext, Entity entity) {

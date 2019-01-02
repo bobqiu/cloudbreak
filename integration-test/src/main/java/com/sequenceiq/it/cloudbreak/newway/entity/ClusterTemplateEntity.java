@@ -1,6 +1,7 @@
 package com.sequenceiq.it.cloudbreak.newway.entity;
 
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 import com.sequenceiq.cloudbreak.api.model.template.ClusterTemplateRequest;
 import com.sequenceiq.cloudbreak.api.model.template.ClusterTemplateResponse;
@@ -62,7 +63,21 @@ public class ClusterTemplateEntity extends AbstractCloudbreakEntity<ClusterTempl
 
     @Override
     public Collection<ClusterTemplateResponse> getAll(CloudbreakClient client) {
-        return client.getCloudbreakClient().clusterTemplateV3EndPoint().listByWorkspace(client.getWorkspaceId());
+        return client.getCloudbreakClient().clusterTemplateV3EndPoint()
+                .listByWorkspace(client.getWorkspaceId())
+                .stream()
+                .map(view -> {
+                    ClusterTemplateResponse response = new ClusterTemplateResponse();
+                    response.setStatus(view.getStatus());
+                    response.setDatalakeRequired(view.getDatalakeRequired());
+                    response.setId(view.getId());
+                    response.setCloudPlatform(view.getCloudPlatform());
+                    response.setDescription(view.getDescription());
+                    response.setName(view.getName());
+                    response.setType(view.getType());
+                    return response;
+                })
+                .collect(Collectors.toSet());
     }
 
     @Override
